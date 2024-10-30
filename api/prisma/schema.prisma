@@ -1,0 +1,21 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model DataRecived {
+  id          Int      @id @default(autoincrement())
+  temperature Float
+  altitude    Float
+  pressure    Float
+  sended_at   DateTime
+  received_at DateTime @default(now())
+  saved_at    DateTime @default(now())
+}

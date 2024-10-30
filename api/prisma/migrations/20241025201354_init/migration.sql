@@ -1,0 +1,10 @@
+-- CreateTable
+CREATE TABLE "DataRecived" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "temperature" REAL NOT NULL,
+    "altitude" REAL NOT NULL,
+    "pressure" REAL NOT NULL,
+    "sended_at" DATETIME NOT NULL,
+    "received_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "saved_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
