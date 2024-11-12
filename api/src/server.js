@@ -46,16 +46,30 @@ clientmqtt.on('message', async (topic, message) => {
 
 app.use('/api', data);
 
-server.listen(process.env.PORT, () => {
+const serverInstance = app.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
 });
 
 const shutdownHandler = () => {
   console.log('Shutting down server...');
-  server.close(() => {
+  serverInstance.close(() => {
     console.log('Server closed.');
     process.exit(0);
   });
+
+  // Si el servidor no se cierra después de un tiempo, forzar la salida
+  setTimeout(() => {
+    console.error('Forcing server shutdown...');
+    process.exit(1);
+  }, 5000); // Espera 5 segundos antes de forzar el cierre
 };
 
+// Maneja señales para apagado limpio
 process.on('SIGINT', shutdownHandler);
+process.on('SIGTERM', shutdownHandler);
+
+// Opcional: Maneja errores no capturados
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught exception:', err);
+  shutdownHandler();
+});
