@@ -4,82 +4,127 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Real-Time Data Viewer</title>
+  <title>Mensajes en Tiempo Real LoRa-WiFi</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+      .table th, .table td {
+          vertical-align: middle;
+          text-align: center;
+      }
+
+      .table-info {
+          background-color: #f8f9fa;
+      }
+  </style>
 </head>
 
 <body>
-  <div class="container py-5">
-    <h1 class="text-center mb-4">Mensajes en Tiempo Real LoRa-LoRa</h1>
-    <div class="card">
-      <div class="card-header">
-        <strong>Status</strong>: <span id="status">Connecting...</span>
-      </div>
-      <div class="card-body">
-        <h5 class="card-title">MQTT Messages</h5>
-        <ul id="message-list" class="list-group"></ul>
-      </div>
+<div class="container py-5">
+  <h1 class="text-center mb-4">Mensajes en Tiempo Real LoRa-WiFi</h1>
+  <div class="card">
+    <div class="card-header">
+      <strong>Status</strong>: <span id="status">Connecting...</span>
+    </div>
+    <div class="card-body">
+      <h5 class="card-title">MQTT Messages</h5>
+      <table class="table table-bordered">
+        <thead class="table-info">
+        <tr>
+          <th>Valor</th>
+          <th>Lora (Arduino)</th>
+          <th>WiFi (ESP32)</th>
+          <th>Servidor (NodeJS)</th>
+          <th>Diferencia Lora-WiFi</th>
+          <th>Diferencia MQTT-Server</th>
+          <th>Tiempo Total</th>
+        </tr>
+        </thead>
+        <tbody id="message-list"></tbody>
+      </table>
     </div>
   </div>
+</div>
 
-  <script type="module">
-    import { io } from "https://cdn.socket.io/4.8.0/socket.io.esm.min.js";
-    const socket = io("http://localhost:3000");
-    const statusEl = document.getElementById('status');
-    const messageList = document.getElementById('message-list');
+<script type="module">
+  import {io} from "https://cdn.socket.io/4.8.0/socket.io.esm.min.js";
 
-    fetch('http://localhost:3000/api/getData')
+  const socket = io("http://localhost:3000");
+  const statusEl = document.getElementById('status');
+  const messageList = document.getElementById('message-list');
+
+  function formatTimeDifference(ms) {
+    const seconds = Math.floor(ms / 1000);
+    const milliseconds = ms % 1000;
+    return `${seconds} sec ${milliseconds} ms`;
+  }
+
+  function formatDateTime(timestamp) {
+    const date = new Date(timestamp);
+    const dateString = date.toLocaleDateString("es-ES", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric"
+    });
+    const timeString = date.toLocaleTimeString("es-ES", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    });
+    const milliseconds = date.getMilliseconds(); // Obtener los milisegundos
+    return `${dateString} ${timeString}.${milliseconds.toString().padStart(3, '0')}`;
+  }
+
+  function createMessageElement(message) {
+    const sentToReceivedDiff = formatTimeDifference(new Date(message.timestamp_sent_mqtt) - new Date(message.timestamp_sent_lora));
+    const receivedToSavedDiff = formatTimeDifference(new Date(message.timestamp_saved_db) - new Date(message.timestamp_sent_mqtt));
+    const totalTime = formatTimeDifference(new Date(message.timestamp_saved_db) - new Date(message.timestamp_sent_lora));
+
+    const messageRow = document.createElement('tr');
+    messageRow.innerHTML = `
+      <td>${message.value}</td>
+      <td>${formatDateTime(message.timestamp_sent_lora)}</td>
+      <td>${formatDateTime(message.timestamp_sent_mqtt)}</td>
+      <td>${formatDateTime(message.timestamp_saved_db)}</td>
+      <td>${sentToReceivedDiff}</td>
+      <td>${receivedToSavedDiff}</td>
+      <td>${totalTime}</td>
+    `;
+    return messageRow;
+  }
+
+  fetch('http://localhost:3000/api/getData')
       .then(response => response.json())
       .then(data => {
         data.map(message => {
-          const messageItem = document.createElement('li');
-          messageItem.classList.add('list-group-item');
-          messageItem.innerHTML = `
-            <div><strong>Temperatura:</strong> ${message.temperature} °C</div>
-            <div><strong>Altitud:</strong> ${message.altitude} m</div>
-            <div><strong>Presión:</strong> ${message.pressure} hPa</div>
-            <div><strong>Enviado:</strong> ${new Date(message.sended_at).toLocaleString()}</div>
-            <div><strong>Recibido:</strong> ${new Date(message.received_at).toLocaleString()}</div>
-            <div><strong>Guardado:</strong> ${new Date(message.saved_at).toLocaleString()}</div>
-          `;
-          messageList.appendChild(messageItem);
+          const messageRow = createMessageElement(message);
+          messageList.appendChild(messageRow);
         });
       });
 
-    // Actualizar estado de conexión
-    socket.on('connect', () => {
-      statusEl.textContent = 'Connected';
-      statusEl.classList.remove('text-danger');
-      statusEl.classList.add('text-success');
-    });
+  socket.on('connect', () => {
+    statusEl.textContent = 'Connected';
+    statusEl.classList.remove('text-danger');
+    statusEl.classList.add('text-success');
+  });
 
-    socket.on('disconnect', () => {
-      statusEl.textContent = 'Disconnected';
-      statusEl.classList.remove('text-success');
-      statusEl.classList.add('text-danger');
-    });
+  socket.on('disconnect', () => {
+    statusEl.textContent = 'Disconnected';
+    statusEl.classList.remove('text-success');
+    statusEl.classList.add('text-danger');
+  });
 
-    socket.on('data', (data) => {
-      const messageItem = document.createElement('li');
-      console.log(data);
-      messageItem.classList.add('list-group-item');
-      messageItem.innerHTML = `
-        <div><strong>Temperatura:</strong> ${data.temperature} °C</div>
-        <div><strong>Altitud:</strong> ${data.altitude} m</div>
-        <div><strong>Presión:</strong> ${data.pressure} hPa</div>
-        <div><strong>Enviado:</strong> ${new Date(data.sended_at).toLocaleString()}</div>
-        <div><strong>Recibido:</strong> ${new Date(data.received_at).toLocaleString()}</div>
-        <div><strong>Guardado:</strong> ${new Date(data.saved_at).toLocaleString()}</div>
-      `;
-      messageList.prepend(messageItem);
-    });
-    socket.on('mqtt_error', (error) => {
-      const errorItem = document.createElement('li');
-      errorItem.classList.add('list-group-item', 'text-danger');
-      errorItem.textContent = `Error: ${error.error}`;
-      messageList.prepend(errorItem);
-    });
-  </script>
+  socket.on('data', (data) => {
+    const messageRow = createMessageElement(data);
+    messageList.prepend(messageRow);
+  });
+
+  socket.on('mqtt_error', (error) => {
+    const errorRow = document.createElement('tr');
+    errorRow.classList.add('table-danger');
+    errorRow.innerHTML = `<td colspan="7">Error: ${error.error}</td>`;
+    messageList.prepend(errorRow);
+  });
+</script>
 </body>
 
 </html>

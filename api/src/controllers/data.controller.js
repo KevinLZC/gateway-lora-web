@@ -1,41 +1,49 @@
-import { PrismaClient } from '@prisma/client';
+import {PrismaClient} from '@prisma/client';
 
 export const prisma = new PrismaClient();
 
 export const postData = async (data) => {
-  const { temperature, altitude, pressure, sended_at, received_at, saved_at } = data;
+  try {
+    const {value, timestamp_sent_lora, timestamp_sent_mqtt, timestamp_saved_db} = data;
 
-  console.log(data);
-
-  await prisma.dataRecived.create({
-    data: {
-      temperature,
-      altitude,
-      sended_at,
-      received_at,
-      pressure,
-      saved_at
+    if (!value || !timestamp_sent_mqtt || !timestamp_sent_mqtt || !timestamp_saved_db) {
+      throw new Error('Missing data');
     }
-  });
 
-  return "Data saved";
+    await prisma.dataRecived.create({
+      data: {
+        value,
+        timestamp_sent_lora,
+        timestamp_sent_mqtt,
+        timestamp_saved_db,
+      }
+    });
+    return {statusCode: 201, statusMessage: "success"};
+  } catch (e) {
+    console.error(e);
+    return {statusCode: 400, statusMessage: "Failed"};
+  }
 };
 
 export const getData = async () => {
-  return await prisma.dataRecived.findMany();
+  try {
+    const data = await prisma.dataRecived.findMany({
+      orderBy: {
+        timestamp_saved_db: 'desc'
+      },
+    });
+    return {statusCode: 200, statusMessage: data};
+  } catch (e) {
+    console.error(e);
+    return {statusCode: 500, statusMessage: "Failed"};
+  }
 }
 
-export const deleteData = async () => {
-  await prisma.dataRecived.deleteMany();
-  return "Data deleted";
-}
-
-export const healthCheck = async () => {
-  const healthCheckData = {
+export const healthCheck = () => {
+  return {
     status: 'API is running',
     uptime: process.uptime(),
     memoryUsage: process.memoryUsage(),
     timestamp: new Date().toISOString(),
   };
-  return healthCheckData;
 };

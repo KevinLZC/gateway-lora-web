@@ -11,11 +11,9 @@ datasource db {
 }
 
 model DataRecived {
-  id          Int      @id @default(autoincrement())
-  temperature Float
-  altitude    Float
-  pressure    Float
-  sended_at   DateTime
-  received_at DateTime @default(now())
-  saved_at    DateTime @default(now())
+  id                  Int      @id @default(autoincrement())
+  value               Float
+  timestamp_sent_lora DateTime
+  timestamp_sent_mqtt DateTime @default(now())
+  timestamp_saved_db  DateTime @default(now())
 }
