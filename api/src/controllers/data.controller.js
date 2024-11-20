@@ -4,9 +4,9 @@ export const prisma = new PrismaClient();
 
 export const postData = async (data) => {
   try {
-    const {value, timestamp_sent_lora, timestamp_sent_mqtt, timestamp_saved_db} = data;
+    const {value, timestamp_sent_lora, timestamp_sent_mqtt, timestamp_saved_db, rssi} = data;
 
-    if (!value || !timestamp_sent_mqtt || !timestamp_sent_mqtt || !timestamp_saved_db) {
+    if (!value || !timestamp_sent_mqtt || !timestamp_sent_mqtt || !timestamp_saved_db || !rssi) {
       throw new Error('Missing data');
     }
 
@@ -16,6 +16,7 @@ export const postData = async (data) => {
         timestamp_sent_lora,
         timestamp_sent_mqtt,
         timestamp_saved_db,
+        rssi
       }
     });
     return {statusCode: 201, statusMessage: "success"};

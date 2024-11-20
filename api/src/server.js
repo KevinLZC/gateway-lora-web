@@ -11,7 +11,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
-    origin: "http://localhost:63342 ",
+    origin: "http://localhost:63342",
   }
 });
 
@@ -38,15 +38,18 @@ clientmqtt.on('message', async (topic, message) => {
   console.log(data);
   const extendedData = {
     ...data,
+    timestamp_sent_lora: new Date(data.timestamp_sent_lora).toISOString(),
+    timestamp_sent_mqtt: new Date(data.timestamp_sent_mqtt).toISOString(),
     timestamp_saved_db: new Date().toISOString(),
   }
+  console.log(extendedData);
   await postData(extendedData);
   io.emit('data', extendedData);
 });
 
 app.use('/api', data);
 
-const serverInstance = app.listen(process.env.PORT, () => {
+const serverInstance = server.listen(process.env.PORT, () => {
   console.log(`Server is running on port ${process.env.PORT}`);
 });
 

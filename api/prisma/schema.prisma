@@ -16,4 +16,5 @@ model DataRecived {
   timestamp_sent_lora DateTime
   timestamp_sent_mqtt DateTime @default(now())
   timestamp_saved_db  DateTime @default(now())
+  rssi                Int
 }
